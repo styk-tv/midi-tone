@@ -25,8 +25,6 @@ document.documentElement.addEventListener("mousedown", () => {
   Array.from($inputs).forEach(($input) => {
     $input.addEventListener("change", () => {
       if ($input.checked) {
-        console.log("ínput", $input);
-        //document.getElementById($input.id).style.background = 'tomato';
         handleChord($input.value);
       }
     });
@@ -34,6 +32,7 @@ document.documentElement.addEventListener("mousedown", () => {
 
   function handleChord(valueString) {
     chordIdx = Number(valueString) - 1;
+    console.log("chordidx", chordIdx);
   }
 
   Tone.Transport.scheduleRepeat(onRepeat, "16n");
