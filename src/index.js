@@ -1,30 +1,65 @@
 import * as Tone from "tone";
+console.clear();
 
-Tone.Transport.bpm.value = 126.25;
-Tone.Transport.loop = true;
-Tone.Transport.loopStart = "0:0:0";
-Tone.Transport.loopEnd = "4:0:0";
+// UPDATE: there is a problem in chrome with starting audio context
+//  before a user gesture. This fixes it.
+var started = false;
+document.documentElement.addEventListener("mousedown", () => {
+  if (started) return;
+  started = true;
 
-const audioFiles = [
-  "https://f.4bars.media/6E/52/6E52A9C1F2DD41ABA6397F82CD3C619B.ogg",
-  "https://f.4bars.media/C1/1C/C11C71DBF1CF40FE85CF1044515F115C.ogg",
-  "https://f.4bars.media/E8/F1/E8F1E4E304334B5580D23F9CCC376278.ogg",
-  "https://f.4bars.media/2A/EB/2AEBDC8619BF411A900EDFF406103150.ogg"
-];
+  const $inputs = document.querySelectorAll("input"),
+    chords = ["A0 C1 E1", "F0 A0 C1", "G0 B0 D1", "D0 F0 A0", "E0 G0 B0"].map(
+      formatChords
+    );
+  console.log(chords);
+  var chordIdx = 0,
+    step = 0;
 
-audioFiles.forEach(url => {
-  const player = new Tone.Player(url);
-  player.autostart = false;
-  player.loop = true;
-  player.loopStart = "0:0:0";
-  player.loopEnd = "4:0:0";
-  player.toMaster().sync();
-  player.start();
-});
+  const synth = new Tone.Synth();
+  const gain = new Tone.Gain(0.7);
+  synth.oscillator.type = "sine";
+  gain.toMaster();
+  synth.connect(gain);
 
-Tone.loaded().then(() => {
-  document.querySelector("button").textContent = "start";
-  document.querySelector("button").addEventListener("click", () => {
-    Tone.Transport.start();
+  Array.from($inputs).forEach(($input) => {
+    $input.addEventListener("change", () => {
+      if ($input.checked) {
+        console.log("ínput", $input);
+        //document.getElementById($input.id).style.background = 'tomato';
+        handleChord($input.value);
+      }
+    });
   });
+
+  function handleChord(valueString) {
+    chordIdx = Number(valueString) - 1;
+  }
+
+  Tone.Transport.scheduleRepeat(onRepeat, "16n");
+  Tone.Transport.start();
+  Tone.Transport.bpm.value = 90;
+
+  function onRepeat(time) {
+    let chord = chords[chordIdx],
+      note = chord[step % chord.length];
+    synth.triggerAttackRelease(note, "16n", time);
+    step++;
+  }
+
+  // DOWN THE LINE THIS WILL MAKE THINGS EASIER
+  function formatChords(chordString) {
+    let chord = chordString.split(" ");
+    let arr = [];
+    for (let i = 0; i < 2; i++) {
+      for (let j = 0; j < chord.length; j++) {
+        let noteOct = chord[j].split(""),
+          note = noteOct[0];
+        let oct = noteOct[1] === "0" ? i + 4 : i + 5;
+        note += oct;
+        arr.push(note);
+      }
+    }
+    return arr;
+  }
 });
